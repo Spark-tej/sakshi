@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrintParts Hub — Pre Press Spare Parts</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Bricolage+Grotesque:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #07090f;
+  --surface:  #0d1117;
+  --card:     #111827;
+  --border:   #1e2433;
+  --border2:  #2a3347;
+  --text:     #e8eaf0;
+  --muted:    #6b7a99;
+  --accent:   #3b82f6;
+  --accent2:  #6366f1;
+  --ctp:      #22d3ee;
+  --proc:     #34d399;
+  --other:    #a78bfa;
+  --danger:   #f87171;
+  --warn:     #fbbf24;
+  --success:  #4ade80;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; }
+.brand { font-family: 'Bricolage Grotesque', sans-serif; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Animations */
+@keyframes fadeUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideIn  { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+@keyframes popIn    { from { opacity:0; transform:scale(.94); } to { opacity:1; transform:scale(1); } }
+@keyframes shimmer  { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+@keyframes pulse-ring { 0%{transform:scale(1);opacity:.6} 70%{transform:scale(1.4);opacity:0} 100%{opacity:0} }
+
+.anim-fade-up   { animation: fadeUp .4s ease both; }
+.anim-slide-in  { animation: slideIn .3s ease both; }
+.anim-pop-in    { animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* Cards */
+.glass {
+  background: rgba(13,17,23,0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+}
+.card-hover { transition: transform .2s, border-color .2s, box-shadow .2s; }
+.card-hover:hover {
+  transform: translateY(-4px);
+  border-color: var(--border2);
+  box-shadow: 0 20px 60px rgba(0,0,0,.4), 0 0 0 1px rgba(59,130,246,.1);
+}
+
+/* Category accent lines */
+.cat-ctp  { border-left: 3px solid var(--ctp);  }
+.cat-proc { border-left: 3px solid var(--proc); }
+.cat-other{ border-left: 3px solid var(--other);}
+
+/* Gradient text */
+.grad-text {
+  background: linear-gradient(135deg, #60a5fa, #818cf8, #a78bfa);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Noise overlay */
+.noise::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grid bg pattern */
+.grid-bg {
+  background-image: 
+    linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Sidebar */
+.sidebar { width: 240px; min-width: 240px; }
+
+/* Input styles */
+.inp {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: 'Space Grotesk', sans-serif;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.inp::placeholder { color: var(--muted); }
+
+/* Btn */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .2s, transform .1s;
+}
+.btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+/* Status badge */
+.badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; letter-spacing:.02em; }
+.badge-ctp   { background:rgba(34,211,238,.12); color:var(--ctp);  border:1px solid rgba(34,211,238,.2);  }
+.badge-proc  { background:rgba(52,211,153,.12); color:var(--proc); border:1px solid rgba(52,211,153,.2);  }
+.badge-other { background:rgba(167,139,250,.12);color:var(--other);border:1px solid rgba(167,139,250,.2); }
+.badge-approved { background:rgba(74,222,128,.12);color:var(--success);border:1px solid rgba(74,222,128,.2); }
+.badge-pending  { background:rgba(251,191,36,.12); color:var(--warn);   border:1px solid rgba(251,191,36,.2);  }
+.badge-rejected { background:rgba(248,113,113,.12);color:var(--danger); border:1px solid rgba(248,113,113,.2); }
+
+/* Tag */
+.tag { font-size:11px; color:var(--muted); background:rgba(255,255,255,.04); border:1px solid var(--border); padding:2px 8px; border-radius:20px; }
+
+/* Section divider */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* Drop zone */
+.drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+}
+.drop-zone:hover, .drop-zone.active {
+  border-color: var(--accent);
+  background: rgba(59,130,246,.04);
+}
+
+/* Stat card */
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.stat-card.ctp::before   { background: var(--ctp);  }
+.stat-card.proc::before  { background: var(--proc); }
+.stat-card.other::before { background: var(--other);}
+.stat-card.total::before { background: linear-gradient(90deg,var(--accent),var(--accent2)); }
+.stat-card.pend::before  { background: var(--warn); }
+
+/* Nav item */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all .2s;
+  border: 1px solid transparent;
+  text-align: left;
+  width: 100%;
+  background: transparent;
+}
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
+.nav-item.active {
+  color: #fff;
+  background: rgba(59,130,246,.12);
+  border-color: rgba(59,130,246,.25);
+}
+
+/* Module section nav */
+.mod-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  border: 1px solid transparent;
+  color: var(--muted);
+  background: transparent;
+}
+.mod-tab:hover { color: var(--text); }
+.mod-tab.active-ctp   { color: var(--ctp);  background:rgba(34,211,238,.1);  border-color:rgba(34,211,238,.2);  }
+.mod-tab.active-proc  { color: var(--proc); background:rgba(52,211,153,.1);  border-color:rgba(52,211,153,.2);  }
+.mod-tab.active-other { color: var(--other);background:rgba(167,139,250,.1); border-color:rgba(167,139,250,.2); }
+.mod-tab.active-all   { color: var(--accent);background:rgba(59,130,246,.1); border-color:rgba(59,130,246,.2); }
+
+/* ── IMAGE UPLOAD ZONE ── */
+.img-upload-zone { position:relative; }
+.img-upload-zone input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2; }
+
+</style>
+</head>
+<body class="noise grid-bg">
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ════════════════════════════════════════════════════════════════════════════
+// CONFIG & CONSTANTS
+// ════════════════════════════════════════════════════════════════════════════
+const API_BASE = "http://localhost:5000/api";
+
+const CATEGORIES = ["All", "CTP", "Processors", "Others"];
+
+const CTP_SUBCATS    = ["Laser Units", "Plates", "Rollers", "Motors", "Optics", "Pumps", "Electronics", "Other CTP"];
+const PROC_SUBCATS   = ["Pumps", "Heaters", "Rollers", "Controllers", "Sensors", "Motors", "Valves", "Other Proc"];
+const OTHER_SUBCATS  = ["UV/Exposure", "Densitometry", "Air/Filtration", "Power Supplies", "Belts/Drives", "Misc"];
+
+const CAT_COLOR = { CTP:"ctp", Processors:"proc", Others:"other" };
+const CAT_VAR   = { CTP:"--ctp", Processors:"--proc", Others:"--other" };
+const CAT_BADGE = { CTP:"badge-ctp", Processors:"badge-proc", Others:"badge-other" };
+
+// ════════════════════════════════════════════════════════════════════════════
+// SAMPLE FALLBACK DATA (used when backend not connected)
+// ════════════════════════════════════════════════════════════════════════════
+const SAMPLE_PARTS = [
+  // ── CTP ─────────────────────────────────────────────────────────────────
+  { _id:"1", category:"CTP", subcategory:"Laser Units", name:"Thermal Laser Unit", model:"LU-T800", description:"High-precision 830nm infrared thermal laser diode array for CTP platesetters. Output power 200mW per channel. Compatible with Agfa Avalon, Kodak Trendsetter series.", image:"https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop", tags:["laser","thermal","830nm","diode"] },
+  { _id:"2", category:"CTP", subcategory:"Laser Units", name:"Violet Laser Module", model:"VL-405X", description:"405nm violet laser module for photopolymer CTP systems. Integrated Peltier cooling for stable output. Fits Agfa Advantage, Screen PlateRite, Heidelberg Suprasetter.", image:"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=300&fit=crop", tags:["laser","violet","405nm","photopolymer"] },
+  { _id:"3", category:"CTP", subcategory:"Plates", name:"Aluminum Printing Plate", model:"AP-CTPS3", description:"0.3mm anodized aluminum offset printing plate for CTP direct imaging. Optimized grain structure for 200 LPI. Pack of 100 plates. Negative working, thermal type.", image:"https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&h=300&fit=crop", tags:["plate","aluminum","offset","thermal"] },
+  { _id:"4", category:"CTP", subcategory:"Rollers", name:"Feed Roller Assembly", model:"FR-A400", description:"Complete feed roller set for automatic plate loading systems. Includes 4 drive rollers, 2 pinch rollers, mounting hardware. Anti-static EPDM coating. For Screen & Fuji CTP.", image:"https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&h=300&fit=crop", tags:["roller","feed","mechanical","anti-static"] },
+  { _id:"5", category:"CTP", subcategory:"Optics", name:"Polygon Scanning Mirror", model:"OSM-R200", description:"Precision polygon mirror assembly for raster scanning in thermal CTP. 12-facet design, dynamically balanced. Speed range 20k–60k RPM. Replaces Creo/Kodak original.", image:"https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400&h=300&fit=crop", tags:["mirror","polygon","optics","scanning"] },
+  { _id:"6", category:"CTP", subcategory:"Other CTP", name:"Plate Punch Unit", model:"PPU-STD", description:"Register punch for pre-punching CTP plates. Compatible with Kodak, Fuji, and Agfa platesetters. Punches up to 0.4mm aluminum plates. Round & elongated pin sets.", image:"https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400&h=300&fit=crop", tags:["punch","register","plate","pre-press"] },
+  { _id:"7", category:"CTP", subcategory:"Motors", name:"Drum Motor Drive Unit", model:"DMD-1500", description:"Servo motor drive for internal drum CTP platesetters. 1.5kW brushless DC, encoder feedback. Direct replacement for Creo Trendsetter / Kodak Trendsetter 400 series.", image:"https://images.unsplash.com/photo-1620121478247-ec786b9be2fa?w=400&h=300&fit=crop", tags:["motor","drum","servo","brushless"] },
+  { _id:"8", category:"CTP", subcategory:"Pumps", name:"Vacuum Pump Kit", model:"VPK-200", description:"Plate-holding vacuum pump kit for external drum CTP. 200 L/min flow, includes filters, tubing, connectors. Oil-free diaphragm design. Universal mounting bracket.", image:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop", tags:["vacuum","pump","external-drum","oil-free"] },
+  // ── Processors ──────────────────────────────────────────────────────────
+  { _id:"9", category:"Processors", subcategory:"Pumps", name:"Developer Replenishment Pump", model:"DRP-50ML", description:"Peristaltic pump for developer chemistry replenishment. 50ml/min, chemical-resistant tubing. For Agfa CP-85, Fuji FP-500B, Kodak processor lines. Easy calibration.", image:"https://images.unsplash.com/photo-1563770660941-20978e870e26?w=400&h=300&fit=crop", tags:["pump","developer","peristaltic","replenishment"] },
+  { _id:"10", category:"Processors", subcategory:"Heaters", name:"Titanium Immersion Heater", model:"IHE-2KW", description:"Titanium sheath immersion heater for developer/rinse tanks. 2kW, 230V AC. Corrosion-resistant to pH 12+ alkaline chemicals. 300mm length, flange mount.", image:"https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?w=400&h=300&fit=crop", tags:["heater","titanium","immersion","2kW"] },
+  { _id:"11", category:"Processors", subcategory:"Rollers", name:"Transport Roller Set", model:"TRS-320", description:"Full 320mm transport roller set for plate/film processors. Top & bottom rollers with sealed bearings. Chemical-resistant EPDM rubber compound. Suits most processor brands.", image:"https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&h=300&fit=crop", tags:["roller","transport","EPDM","320mm"] },
+  { _id:"12", category:"Processors", subcategory:"Pumps", name:"Recirculation Pump", model:"RCP-80W", description:"Centrifugal pump for developer tank agitation. 80W, chemical-resistant impeller. pH 7–13 rated, 8 L/min flow. Magnetic drive, zero shaft seal leakage risk.", image:"https://images.unsplash.com/photo-1563770660941-20978e870e26?w=400&h=300&fit=crop", tags:["pump","recirculation","centrifugal","8L/min"] },
+  { _id:"13", category:"Processors", subcategory:"Controllers", name:"PID Temperature Controller", model:"TCB-PID", description:"PID controller PCB for processor developer tank temperature. Controls heater via SSR relay. PT100 sensor input, ±0.5°C accuracy. DIN rail mount option.", image:"https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop", tags:["PID","controller","temperature","PCB"] },
+  { _id:"14", category:"Processors", subcategory:"Motors", name:"Transport Drive Gearbox", model:"DMG-24V", description:"24VDC gear motor for processor transport drive system. 3.5 Nm torque, 30 RPM output. Mounting bracket and chain sprocket included. For Screen PT-R, Agfa Ratnor.", image:"https://images.unsplash.com/photo-1620121478247-ec786b9be2fa?w=400&h=300&fit=crop", tags:["motor","gearbox","24VDC","transport"] },
+  { _id:"15", category:"Processors", subcategory:"Rollers", name:"Squeegee Roller Pair", model:"SQR-PAIR", description:"Squeegee roller pair for removing excess developer from plates. Shore A 60° hardness, 320mm width. Anti-swelling EPDM compound. Fits most flat-bed plate processors.", image:"https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?w=400&h=300&fit=crop", tags:["squeegee","roller","EPDM","developer"] },
+  { _id:"16", category:"Processors", subcategory:"Sensors", name:"Plate Proximity Sensor", model:"PS-INF24", description:"IR proximity sensor for plate detection at processor entry/exit. 24VDC NPN output, sensing range 0–50mm. IP65 rated, M12 connectorized cable. Response time <1ms.", image:"https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400&h=300&fit=crop", tags:["sensor","IR","proximity","IP65"] },
+  { _id:"17", category:"Processors", subcategory:"Valves", name:"Chemical Dosing Valve", model:"CDV-PP14", description:"Solenoid dosing valve for replenishment systems. Polypropylene body, PTFE seat. 24VDC coil, 4mm orifice. Chemical-media rated, excellent for developer & gum solutions.", image:"https://images.unsplash.com/photo-1563770660941-20978e870e26?w=400&h=300&fit=crop", tags:["valve","solenoid","PTFE","chemical"] },
+  // ── Others ──────────────────────────────────────────────────────────────
+  { _id:"18", category:"Others", subcategory:"UV/Exposure", name:"UV LED Exposure Unit", model:"UVLED-365", description:"365nm UV LED array for contact exposure of photopolymer plates/films. 500W equivalent output, 500×600mm area. Water-cooled, integrated temperature monitoring.", image:"https://images.unsplash.com/photo-1602576666092-bf6447a729fc?w=400&h=300&fit=crop", tags:["UV","LED","365nm","exposure"] },
+  { _id:"19", category:"Others", subcategory:"Densitometry", name:"Densitometer Sensor Head", model:"DSH-VIS", description:"Replacement sensor head for reflection densitometer. Visible 400–700nm, 45°/0° geometry. X-Rite 500 series and Gretag Macbeth compatible. Factory calibrated.", image:"https://images.unsplash.com/photo-1530973428-5bf2db2e4d71?w=400&h=300&fit=crop", tags:["densitometer","sensor","color","calibrated"] },
+  { _id:"20", category:"Others", subcategory:"Air/Filtration", name:"3-Stage Air Filter Kit", model:"ACF-3STAGE", description:"3-stage compressed air filtration: coalescing, particulate (0.01 micron), activated carbon. Protects CTP & processor pneumatics. Push-in fittings, 1/4\" BSP ports.", image:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop", tags:["filter","air","compressor","0.01micron"] },
+  { _id:"21", category:"Others", subcategory:"Power Supplies", name:"24V/10A DIN Power Supply", model:"PSU-24V10A", description:"Switching PSU 24VDC/10A for CTP/processor control systems. Wide input 85–265VAC. Short-circuit, over-voltage and overload protected. DIN rail mount, CE marked.", image:"https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop", tags:["PSU","24VDC","DIN-rail","SMPS"] },
+  { _id:"22", category:"Others", subcategory:"Belts/Drives", name:"T5 Timing Belt 500mm", model:"RDB-T5X500", description:"T5 timing belt, 500mm circumference, 15mm width. Fiberglass tensile cord, neoprene compound. For auxiliary drives in platesetters and film processors. Low backlash.", image:"https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&h=300&fit=crop", tags:["belt","timing","T5","neoprene"] },
+];
+
+const SAMPLE_USERS = [
+  { _id:"admin1", name:"Saiteja Admin",    email:"saiteja@mng.com",      role:"admin",    status:"approved", department:"Management",   createdAt:"2024-01-01" },
+  { _id:"emp1",   name:"Saiteja Engineer", email:"saiteja@engineer.com", role:"employee", status:"approved", department:"Pre-Press",    createdAt:"2024-02-10" },
+  { _id:"emp2",   name:"Priya Sharma",     email:"priya@printparts.com", role:"employee", status:"pending",  department:"Maintenance",  createdAt:"2024-04-15" },
+];
+
+const genId = () => Math.random().toString(36).slice(2,10);
+
+// ════════════════════════════════════════════════════════════════════════════
+// API CLIENT (with sample fallback)
+// ════════════════════════════════════════════════════════════════════════════
+let _token = null;
+const api = {
+  setToken: (t) => { _token = t; },
+  headers: (extra={}) => ({
+    "Content-Type": "application/json",
+    ...((_token) ? { Authorization: `Bearer ${_token}` } : {}),
+    ...extra,
+  }),
+  async get(path) {
+    try {
+      const r = await fetch(`${API_BASE}${path}`, { headers: api.headers() });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch { return null; }
+  },
+  async post(path, body) {
+    try {
+      const r = await fetch(`${API_BASE}${path}`, { method:"POST", headers: api.headers(), body: JSON.stringify(body) });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch { return null; }
+  },
+  async postForm(path, formData) {
+    try {
+      const r = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { ...(_token ? { Authorization: `Bearer ${_token}` } : {}) },
+        body: formData,
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch { return null; }
+  },
+  async patch(path, body) {
+    try {
+      const r = await fetch(`${API_BASE}${path}`, { method:"PATCH", headers: api.headers(), body: JSON.stringify(body) });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch { return null; }
+  },
+  async delete(path) {
+    try {
+      const r = await fetch(`${API_BASE}${path}`, { method:"DELETE", headers: api.headers() });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch { return null; }
+  },
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════════════════
+function Toast({ toasts }) {
+  return (
+    <div style={{ position:"fixed", top:20, right:20, zIndex:9999, display:"flex", flexDirection:"column", gap:8 }}>
+      {toasts.map(t => (
+        <div key={t.id} className="anim-slide-in" style={{
+          background: t.type==="error" ? "rgba(248,113,113,.15)" : t.type==="warn" ? "rgba(251,191,36,.15)" : "rgba(74,222,128,.15)",
+          border: `1px solid ${t.type==="error" ? "rgba(248,113,113,.3)" : t.type==="warn" ? "rgba(251,191,36,.3)" : "rgba(74,222,128,.3)"}`,
+          color: t.type==="error" ? "var(--danger)" : t.type==="warn" ? "var(--warn)" : "var(--success)",
+          backdropFilter:"blur(12px)", borderRadius:12, padding:"10px 16px",
+          display:"flex", alignItems:"center", gap:8, fontSize:13, fontWeight:600, minWidth:240
+        }}>
+          <span>{t.type==="error"?"✕":t.type==="warn"?"⚠":"✓"}</span> {t.msg}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ROOT APP
+// ════════════════════════════════════════════════════════════════════════════
+function App() {
+  const [parts,     setParts]     = useState(SAMPLE_PARTS);
+  const [users,     setUsers]     = useState(SAMPLE_USERS);
+  const [currentUser, setCurrent] = useState(null);
+  const [page,      setPage]      = useState("login");
+  const [toasts,    setToasts]    = useState([]);
+  const [backendOk, setBackendOk] = useState(false);
+
+  const addToast = (msg, type="success") => {
+    const id = genId();
+    setToasts(p => [...p, { id, msg, type }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3500);
+  };
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const login = async (email, password) => {
+    // Try backend first
+    const res = await api.post("/auth/login", { email, password });
+    if (res?.token) {
+      api.setToken(res.token);
+      setCurrent(res.user);
+      setBackendOk(true);
+      setPage(res.user.role === "admin" ? "admin" : "dashboard");
+      addToast(`Welcome back, ${res.user.name.split(" ")[0]}!`);
+      loadPartsFromBackend();
+      return;
+    }
+    // Fallback to sample data
+    const u = SAMPLE_USERS.find(u => u.email === email);
+    if (!u) return addToast("Invalid credentials", "error");
+    if (u.password && u.password !== password) return addToast("Invalid credentials", "error");
+    if (u.status === "pending")   return addToast("Account pending admin approval", "warn");
+    if (u.status === "rejected")  return addToast("Access was rejected", "error");
+    setCurrent(u);
+    setPage(u.role === "admin" ? "admin" : "dashboard");
+    addToast(`Welcome, ${u.name.split(" ")[0]}! (Demo mode)`);
+  };
+
+  const register = async (name, email, password, department) => {
+    const res = await api.post("/auth/register", { name, email, password, department });
+    if (res?.message) {
+      addToast("Registration submitted! Awaiting admin approval.");
+      setPage("login");
+      return;
+    }
+    // fallback
+    if (SAMPLE_USERS.find(u => u.email === email)) return addToast("Email already registered", "error");
+    setUsers(p => [...p, { _id:genId(), name, email, password, department, role:"employee", status:"pending", createdAt: new Date().toISOString().slice(0,10) }]);
+    addToast("Request submitted! Awaiting admin approval.");
+    setPage("login");
+  };
+
+  const logout = () => {
+    api.setToken(null);
+    setCurrent(null);
+    setParts(SAMPLE_PARTS);
+    setUsers(SAMPLE_USERS);
+    setBackendOk(false);
+    setPage("login");
+  };
+
+  // ── Parts ─────────────────────────────────────────────────────────────────
+  const loadPartsFromBackend = async () => {
+    const res = await api.get("/parts?limit=100");
+    if (res?.parts?.length) setParts(res.parts);
+  };
+
+  const addPart = async (formData) => {
+    const res = await api.postForm("/parts", formData);
+    if (res?._id) { setParts(p => [res, ...p]); addToast("Spare part added!"); return; }
+    // fallback
+    const data = Object.fromEntries(formData.entries());
+    const tags = data.tags ? JSON.parse(data.tags) : [];
+    const part = {
+      _id: genId(),
+      name: data.name,
+      model: data.model,
+      category: data.category,
+      subcategory: data.subcategory,
+      description: data.description,
+      image: data.imageUrl || "",
+      imageType: data.imageUrl ? "url" : "local",
+      tags: tags,
+    };
+    setParts(p => [part, ...p]);
+    addToast("Part added (demo)!");
+  };
+
+  const updatePart = async (id, formData) => {
+    const res = await api.postForm ? null : null;
+    try {
+      const r = await fetch(`${API_BASE}/parts/${id}`, {
+        method:"PUT",
+        headers: { ...(_token ? { Authorization: `Bearer ${_token}` } : {}) },
+        body: formData,
+      });
+      const data = await r.json();
+      if (data?._id) { setParts(p => p.map(pt => pt._id===id ? data : pt)); addToast("Part updated!"); return; }
+    } catch {}
+    setParts(p => p.map(pt => {
+      if (pt._id !== id) return pt;
+      const d = Object.fromEntries(formData.entries());
+      const tags = d.tags ? JSON.parse(d.tags) : pt.tags;
+      return { ...pt, name: d.name, model: d.model, category: d.category, subcategory: d.subcategory, description: d.description, tags: tags };
+    }));
+    addToast("Part updated (demo)!");
+  };
+
+  const deletePart = async (id) => {
+    await api.delete(`/parts/${id}`);
+    setParts(p => p.filter(pt => pt._id !== id));
+    addToast("Part deleted", "warn");
+  };
+
+  // ── Users ─────────────────────────────────────────────────────────────────
+  const approveUser = async (id) => {
+    await api.patch(`/admin/users/${id}/status`, { status:"approved" });
+    setUsers(p => p.map(u => u._id===id ? {...u, status:"approved"} : u));
+    addToast("User approved!");
+  };
+  const rejectUser = async (id) => {
+    await api.patch(`/admin/users/${id}/status`, { status:"rejected" });
+    setUsers(p => p.map(u => u._id===id ? {...u, status:"rejected"} : u));
+    addToast("User rejected", "warn");
+  };
+  const deleteUser = async (id) => {
+    await api.delete(`/admin/users/${id}`);
+    setUsers(p => p.filter(u => u._id!==id));
+    addToast("User removed", "warn");
+  };
+
+  const pending = users.filter(u => u.status === "pending").length;
+
+  return (
+    <>
+      <Toast toasts={toasts} />
+      {page === "login"     && <LoginPage onLogin={login} onGoRegister={() => setPage("register")} />}
+      {page === "register"  && <RegisterPage onRegister={register} onBack={() => setPage("login")} />}
+      {page === "dashboard" && <EmployeeDash parts={parts} user={currentUser} onLogout={logout} />}
+      {page === "admin"     && <AdminDash parts={parts} users={users} user={currentUser} onLogout={logout}
+          onApprove={approveUser} onReject={rejectUser} onDeleteUser={deleteUser}
+          onAdd={addPart} onUpdate={updatePart} onDelete={deletePart} pending={pending} />}
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOGIN PAGE
+// ════════════════════════════════════════════════════════════════════════════
+function LoginPage({ onLogin, onGoRegister }) {
+  const [email, setEmail]   = useState("");
+  const [pw,    setPw]      = useState("");
+  const [load,  setLoad]    = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!email || !pw) return;
+    setLoad(true);
+    await onLogin(email, pw);
+    setLoad(false);
+  };
+
+  const fill = (e, p) => { setEmail(e); setPw(p); };
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      {/* Background glow */}
+      <div style={{ position:"fixed", top:"20%", left:"40%", width:500, height:500, background:"radial-gradient(ellipse,rgba(59,130,246,.08) 0%,transparent 70%)", pointerEvents:"none" }}/>
+      <div style={{ position:"fixed", bottom:"10%", right:"20%", width:300, height:300, background:"radial-gradient(ellipse,rgba(99,102,241,.06) 0%,transparent 70%)", pointerEvents:"none" }}/>
+
+      <div className="anim-fade-up" style={{ width:"100%", maxWidth:420 }}>
+        {/* Logo */}
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:56, height:56, borderRadius:16, background:"linear-gradient(135deg,#3b82f6,#6366f1)", marginBottom:16, boxShadow:"0 20px 60px rgba(59,130,246,.3)" }}>
+            <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <h1 className="brand" style={{ fontSize:32, fontWeight:800, color:"#fff", letterSpacing:"-0.5px" }}>PrintParts Hub</h1>
+          <p style={{ color:"var(--muted)", fontSize:13, marginTop:4 }}>Pre-Press Spare Parts Reference System</p>
+        </div>
+
+        {/* Card */}
+        <div className="glass" style={{ borderRadius:20, padding:32 }}>
+          <h2 style={{ fontSize:16, fontWeight:700, marginBottom:20, color:"var(--text)" }}>Sign in to your account</h2>
+          <form onSubmit={submit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            <div>
+              <label style={{ fontSize:12, color:"var(--muted)", fontWeight:600, display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:".05em" }}>Email Address</label>
+              <input className="inp" value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@printparts.com" />
+            </div>
+            <div>
+              <label style={{ fontSize:12, color:"var(--muted)", fontWeight:600, display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:".05em" }}>Password</label>
+              <input className="inp" value={pw} onChange={e=>setPw(e.target.value)} type="password" placeholder="••••••••" />
+            </div>
+            <button className="btn-primary" type="submit" disabled={load} style={{ padding:"12px 0", fontSize:14, marginTop:4 }}>
+              {load ? "Signing in…" : "Sign In →"}
+            </button>
+          </form>
+
+          <div style={{ height:1, background:"var(--border)", margin:"20px 0" }} />
+
+          {/* Quick fill buttons */}
+          <p style={{ fontSize:11, color:"var(--muted)", fontWeight:600, textTransform:"uppercase", letterSpacing:".05em", marginBottom:10 }}>Quick Login</p>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={()=>fill("saiteja@mng.com","saiteja@123")} className="btn-ghost" style={{ flex:1, padding:"8px 12px", fontSize:12 }}>
+              🔑 Admin
+            </button>
+            <button onClick={()=>fill("saiteja@engineer.com","sai@prepress")} className="btn-ghost" style={{ flex:1, padding:"8px 12px", fontSize:12 }}>
+              👤 Engineer
+            </button>
+          </div>
+
+          <div style={{ marginTop:16, padding:"12px 14px", background:"rgba(255,255,255,.03)", borderRadius:10, border:"1px solid var(--border)", fontSize:11, color:"var(--muted)", lineHeight:1.8 }}>
+            <span style={{color:"var(--text)",fontWeight:600}}>Admin:</span> saiteja@mng.com / saiteja@123<br/>
+            <span style={{color:"var(--text)",fontWeight:600}}>Engineer:</span> saiteja@engineer.com / sai@prepress
+          </div>
+
+          <p style={{ marginTop:16, textAlign:"center", fontSize:12, color:"var(--muted)" }}>
+            No access? <button onClick={onGoRegister} style={{ background:"none", border:"none", color:"var(--accent)", fontWeight:700, cursor:"pointer", fontSize:12 }}>Request Account</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// REGISTER PAGE
+// ════════════════════════════════════════════════════════════════════════════
+function RegisterPage({ onRegister, onBack }) {
+  const [f, setF] = useState({ name:"", email:"", pw:"", dept:"" });
+  const [load, setLoad] = useState(false);
+  const set = (k, v) => setF(p => ({ ...p, [k]:v }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!f.name || !f.email || !f.pw) return;
+    if (f.pw.length < 6) return alert("Password min 6 chars");
+    setLoad(true);
+    await onRegister(f.name, f.email, f.pw, f.dept);
+    setLoad(false);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div className="anim-fade-up" style={{ width:"100%", maxWidth:400 }}>
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <h1 className="brand" style={{ fontSize:28, fontWeight:800, color:"#fff" }}>Request Access</h1>
+          <p style={{ color:"var(--muted)", fontSize:13, marginTop:4 }}>Submit for admin approval</p>
+        </div>
+        <div className="glass" style={{ borderRadius:20, padding:28 }}>
+          <form onSubmit={submit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            {[["Full Name","text","name","John Doe"],["Work Email","email","email","you@company.com"]].map(([label,type,k,ph]) => (
+              <div key={k}>
+                <label style={{ fontSize:12, color:"var(--muted)", fontWeight:600, display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:".05em" }}>{label}</label>
+                <input className="inp" value={f[k]} onChange={e=>set(k,e.target.value)} type={type} placeholder={ph} required />
+              </div>
+            ))}
+            <div>
+              <label style={{ fontSize:12, color:"var(--muted)", fontWeight:600, display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:".05em" }}>Department</label>
+              <select className="inp" value={f.dept} onChange={e=>set("dept",e.target.value)}>
+                <option value="">Select department…</option>
+                {["Pre-Press","CTP Operations","Processor Maintenance","Management","Quality Control","Other"].map(d=><option key={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize:12, color:"var(--muted)", fontWeight:600, display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:".05em" }}>Password</label>
+              <input className="inp" value={f.pw} onChange={e=>set("pw",e.target.value)} type="password" placeholder="Min. 6 characters" required />
+            </div>
+            <div style={{ background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.2)", borderRadius:10, padding:"10px 12px", fontSize:12, color:"var(--warn)" }}>
+              ⏳ You will be notified once an admin approves your request.
+            </div>
+            <button className="btn-primary" type="submit" disabled={load} style={{ padding:"12px 0", fontSize:14 }}>
+              {load ? "Submitting…" : "Submit Request →"}
+            </button>
+          </form>
+          <button onClick={onBack} style={{ width:"100%", marginTop:12, background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:13 }}>← Back to Login</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EMPLOYEE DASHBOARD
+// ════════════════════════════════════════════════════════════════════════════
+function EmployeeDash({ parts, user, onLogout }) {
+  const [search,  setSearch]  = useState("");
+  const [cat,     setCat]     = useState("All");
+  const [subcat,  setSubcat]  = useState("All");
+  const [pg,      setPg]      = useState(1);
+  const [sel,     setSel]     = useState(null);
+  const [sideOpen, setSide]   = useState(false);
+  const PER = 9;
+
+  const subcats = cat === "All" ? [] : cat === "CTP" ? CTP_SUBCATS : cat === "Processors" ? PROC_SUBCATS : OTHER_SUBCATS;
+
+  const filtered = parts.filter(p => {
+    const mc = cat === "All" || p.category === cat;
+    const ms = subcat === "All" || !p.subcategory || p.subcategory === subcat;
+    const q = search.toLowerCase();
+    return mc && ms && (!q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.model.toLowerCase().includes(q) || (p.tags||[]).some(t => t.toLowerCase().includes(q)));
+  });
+
+  const totalPg = Math.ceil(filtered.length / PER);
+  const paged   = filtered.slice((pg-1)*PER, pg*PER);
+
+  const changeCat = (c) => { setCat(c); setSubcat("All"); setPg(1); setSide(false); };
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex" }}>
+      {/* Mobile backdrop */}
+      {sideOpen && <div onClick={()=>setSide(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.6)", zIndex:20 }} />}
+
+      {/* ── SIDEBAR ── */}
+      <EmployeeSidebar cat={cat} onCat={changeCat} user={user} onLogout={onLogout} open={sideOpen} onClose={()=>setSide(false)} parts={parts} />
+
+      {/* ── MAIN ── */}
+      <main style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
+        {/* Topbar */}
+        <div style={{ position:"sticky", top:0, zIndex:10, background:"rgba(7,9,15,.9)", backdropFilter:"blur(16px)", borderBottom:"1px solid var(--border)", padding:"14px 24px", display:"flex", alignItems:"center", gap:12 }}>
+          <button onClick={()=>setSide(true)} style={{ background:"none", border:"1px solid var(--border)", borderRadius:8, padding:"7px 10px", cursor:"pointer", display:"none", color:"var(--text)" }} className="menu-btn">☰</button>
+          <div style={{ flex:1, position:"relative" }}>
+            <svg style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)" }} width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input className="inp" value={search} onChange={e=>{setSearch(e.target.value);setPg(1);}} placeholder="Search by name, model, keyword, tag…" style={{ paddingLeft:38 }} />
+          </div>
+        </div>
+
+        <div style={{ padding:"24px", flex:1 }}>
+          {/* Module tabs */}
+          {cat !== "All" && (
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:20 }}>
+              <button className={`mod-tab ${subcat==="All" ? `active-${CAT_COLOR[cat]||"all"}` : ""}`} onClick={()=>setSubcat("All")}>All {cat}</button>
+              {subcats.map(s => (
+                <button key={s} className={`mod-tab ${subcat===s ? `active-${CAT_COLOR[cat]||"all"}` : ""}`} onClick={()=>{setSubcat(s);setPg(1);}}>{s}</button>
+              ))}
+            </div>
+          )}
+
+          {/* Section header */}
+          <div className="section-header">
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:8, height:8, borderRadius:"50%", background: cat==="CTP"?"var(--ctp)":cat==="Processors"?"var(--proc)":cat==="Others"?"var(--other)":"var(--accent)" }} />
+              <span style={{ fontSize:18, fontWeight:700, color:"var(--text)" }} className="brand">
+                {cat === "All" ? "All Spare Parts" : cat === "CTP" ? "CTP — Computer to Plate" : cat === "Processors" ? "Processors & Chemistry" : "Others & Accessories"}
+              </span>
+            </div>
+            <span style={{ fontSize:12, color:"var(--muted)", fontWeight:500 }}>{filtered.length} part{filtered.length!==1?"s":""}{search&&` · "${search}"`}</span>
+          </div>
+
+          {/* Grid */}
+          {paged.length === 0
+            ? <EmptyState />
+            : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:18 }}>
+                {paged.map((p,i) => <PartCard key={p._id} part={p} onClick={()=>setSel(p)} delay={i*35} />)}
+              </div>
+          }
+
+          <Pagination pg={pg} total={totalPg} onChange={setPg} />
+        </div>
+      </main>
+
+      {sel && <PartModal part={sel} onClose={()=>setSel(null)} />}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EMPLOYEE SIDEBAR
+// ════════════════════════════════════════════════════════════════════════════
+function EmployeeSidebar({ cat, onCat, user, onLogout, open, onClose, parts }) {
+  const counts = {
+    All: parts.length,
+    CTP: parts.filter(p=>p.category==="CTP").length,
+    Processors: parts.filter(p=>p.category==="Processors").length,
+    Others: parts.filter(p=>p.category==="Others").length,
+  };
+
+  return (
+    <aside style={{
+      width:240, minWidth:240, background:"var(--surface)", borderRight:"1px solid var(--border)",
+      display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0,
+    }}>
+      {/* Logo */}
+      <div style={{ padding:"20px 18px 16px", borderBottom:"1px solid var(--border)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#3b82f6,#6366f1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <div>
+            <p className="brand" style={{ fontWeight:800, fontSize:15, color:"var(--text)", letterSpacing:"-0.3px" }}>PrintParts</p>
+            <p style={{ fontSize:10, color:"var(--muted)", fontWeight:500, textTransform:"uppercase", letterSpacing:".05em" }}>Parts Reference</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ flex:1, padding:"12px 10px", overflowY:"auto" }}>
+        <p style={{ fontSize:10, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", padding:"0 8px 8px" }}>Modules</p>
+        {[
+          { id:"All",        label:"All Parts",              icon:"⬡", color:"var(--accent)" },
+          { id:"CTP",        label:"CTP · Computer to Plate", icon:"▣", color:"var(--ctp)"   },
+          { id:"Processors", label:"Processors & Chemistry",  icon:"◎", color:"var(--proc)"  },
+          { id:"Others",     label:"Others & Accessories",    icon:"◇", color:"var(--other)" },
+        ].map(item => (
+          <button key={item.id} onClick={()=>onCat(item.id)} className="nav-item" style={{ ...(cat===item.id ? { borderColor: `color-mix(in srgb, ${item.color} 30%, transparent)`, color:item.color, background:`color-mix(in srgb, ${item.color} 8%, transparent)` } : {}) }}>
+            <span style={{ fontSize:16 }}>{item.icon}</span>
+            <span style={{ flex:1, textAlign:"left" }}>{item.label}</span>
+            <span style={{ fontSize:11, background:"var(--border)", color:"var(--muted)", padding:"1px 7px", borderRadius:10 }}>{counts[item.id]||0}</span>
+          </button>
+        ))}
+
+        {/* CTP sub-sections */}
+        {cat === "CTP" && (
+          <div style={{ marginTop:16 }}>
+            <p style={{ fontSize:10, color:"var(--ctp)", fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", padding:"0 8px 8px", opacity:.7 }}>CTP Sub-categories</p>
+            {CTP_SUBCATS.map(s => (
+              <div key={s} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", color:"var(--muted)", fontSize:12 }}>
+                <span style={{ width:4, height:4, borderRadius:"50%", background:"var(--ctp)", opacity:.5, flexShrink:0 }} />
+                {s} <span style={{ marginLeft:"auto", fontSize:10, color:"var(--border2)" }}>{parts.filter(p=>p.category==="CTP"&&p.subcategory===s).length||""}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {cat === "Processors" && (
+          <div style={{ marginTop:16 }}>
+            <p style={{ fontSize:10, color:"var(--proc)", fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", padding:"0 8px 8px", opacity:.7 }}>Processor Sub-categories</p>
+            {PROC_SUBCATS.map(s => (
+              <div key={s} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", color:"var(--muted)", fontSize:12 }}>
+                <span style={{ width:4, height:4, borderRadius:"50%", background:"var(--proc)", opacity:.5, flexShrink:0 }} />
+                {s} <span style={{ marginLeft:"auto", fontSize:10, color:"var(--border2)" }}>{parts.filter(p=>p.category==="Processors"&&p.subcategory===s).length||""}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </nav>
+
+      {/* User */}
+      <div style={{ padding:"12px 10px", borderTop:"1px solid var(--border)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 8px 10px" }}>
+          <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg,#60a5fa,#818cf8)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:700, fontSize:13, flexShrink:0 }}>
+            {(user?.name||"U")[0]}
+          </div>
+          <div style={{ minWidth:0 }}>
+            <p style={{ fontSize:12, fontWeight:600, color:"var(--text)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{user?.name}</p>
+            <p style={{ fontSize:10, color:"var(--muted)" }}>{user?.department || "Employee"}</p>
+          </div>
+        </div>
+        <button onClick={onLogout} className="nav-item" style={{ color:"var(--danger)", fontSize:12 }}>
+          <span>→</span> Sign Out
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ADMIN DASHBOARD
+// ════════════════════════════════════════════════════════════════════════════
+function AdminDash({ parts, users, user, onLogout, onApprove, onReject, onDeleteUser, onAdd, onUpdate, onDelete, pending }) {
+  const [tab,    setTab]    = useState("parts");
+  const [modCat, setModCat] = useState("All");  // module filter
+  const [subcat, setSubcat] = useState("All");
+  const [search, setSearch] = useState("");
+  const [pg,     setPg]     = useState(1);
+  const [sel,    setSel]    = useState(null);
+  const [form,   setForm]   = useState(null);   // null | "add" | part
+  const [side,   setSide]   = useState(false);
+  const PER = 9;
+
+  const filtered = parts.filter(p => {
+    const mc = modCat === "All" || p.category === modCat;
+    const ms = subcat === "All" || !p.subcategory || p.subcategory === subcat;
+    const q  = search.toLowerCase();
+    return mc && ms && (!q || p.name.toLowerCase().includes(q) || p.model.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q)));
+  });
+  const totalPg = Math.ceil(filtered.length / PER);
+  const paged   = filtered.slice((pg-1)*PER, pg*PER);
+
+  const subcats = modCat === "All" ? [] : modCat === "CTP" ? CTP_SUBCATS : modCat === "Processors" ? PROC_SUBCATS : OTHER_SUBCATS;
+
+  const changeMod = (c) => { setModCat(c); setSubcat("All"); setPg(1); };
+
+  const stats = [
+    { label:"Total Parts",   val:parts.length,                                   cls:"total", icon:"⬡", color:"linear-gradient(135deg,#3b82f6,#6366f1)" },
+    { label:"CTP Modules",   val:parts.filter(p=>p.category==="CTP").length,     cls:"ctp",   icon:"▣", color:"linear-gradient(135deg,#22d3ee,#0891b2)" },
+    { label:"Processors",    val:parts.filter(p=>p.category==="Processors").length, cls:"proc", icon:"◎", color:"linear-gradient(135deg,#34d399,#059669)" },
+    { label:"Others",        val:parts.filter(p=>p.category==="Others").length,  cls:"other", icon:"◇", color:"linear-gradient(135deg,#a78bfa,#7c3aed)" },
+    { label:"Pending Users", val:pending,                                         cls:"pend",  icon:"⏳", color:pending?"linear-gradient(135deg,#fbbf24,#d97706)":"linear-gradient(135deg,#6b7a99,#4b5563)" },
+  ];
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex" }}>
+      {side && <div onClick={()=>setSide(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.6)", zIndex:20 }} />}
+
+      {/* ── ADMIN SIDEBAR ── */}
+      <aside style={{ width:240, minWidth:240, background:"var(--surface)", borderRight:"1px solid var(--border)", display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0 }}>
+        <div style={{ padding:"20px 18px 16px", borderBottom:"1px solid var(--border)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#3b82f6,#6366f1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div>
+              <p className="brand" style={{ fontWeight:800, fontSize:15, color:"var(--text)" }}>PrintParts</p>
+              <p style={{ fontSize:10, color:"var(--accent)", fontWeight:600, textTransform:"uppercase", letterSpacing:".05em" }}>Admin Panel</p>
+            </div>
+          </div>
+        </div>
+
+        <nav style={{ flex:1, padding:"12px 10px", overflowY:"auto" }}>
+          <p style={{ fontSize:10, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", padding:"0 8px 8px" }}>Navigation</p>
+          <button onClick={()=>setTab("parts")} className={`nav-item ${tab==="parts"?"active":""}`}>
+            <span>⬡</span> Spare Parts
+          </button>
+          <button onClick={()=>setTab("users")} className={`nav-item ${tab==="users"?"active":""}`}>
+            <span>◈</span> User Management
+            {pending>0 && <span style={{ marginLeft:"auto", background:"var(--warn)", color:"#000", fontSize:10, fontWeight:800, padding:"1px 7px", borderRadius:10 }}>{pending}</span>}
+          </button>
+
+          <div style={{ height:1, background:"var(--border)", margin:"12px 0" }} />
+          <p style={{ fontSize:10, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", padding:"0 8px 8px" }}>Filter Module</p>
+          {[
+            { id:"All",        label:"All Modules", color:"var(--accent)", icon:"⬡" },
+            { id:"CTP",        label:"CTP",         color:"var(--ctp)",    icon:"▣" },
+            { id:"Processors", label:"Processors",  color:"var(--proc)",   icon:"◎" },
+            { id:"Others",     label:"Others",      color:"var(--other)",  icon:"◇" },
+          ].map(item => (
+            <button key={item.id} onClick={()=>{changeMod(item.id);setTab("parts");}} className="nav-item" style={modCat===item.id&&tab==="parts" ? { color:item.color, background:`color-mix(in srgb, ${item.color} 8%, transparent)`, borderColor:`color-mix(in srgb, ${item.color} 30%, transparent)` } : {}}>
+              <span>{item.icon}</span> {item.label}
+              <span style={{ marginLeft:"auto", fontSize:10, color:"var(--muted)", background:"var(--border)", padding:"1px 6px", borderRadius:8 }}>
+                {item.id==="All"?parts.length:parts.filter(p=>p.category===item.id).length}
+              </span>
+            </button>
+          ))}
+        </nav>
+
+        <div style={{ padding:"12px 10px", borderTop:"1px solid var(--border)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 8px 10px" }}>
+            <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg,#f59e0b,#d97706)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:700, fontSize:13 }}>
+              {(user?.name||"A")[0]}
+            </div>
+            <div>
+              <p style={{ fontSize:12, fontWeight:600, color:"var(--text)" }}>{user?.name}</p>
+              <p style={{ fontSize:10, color:"var(--warn)", fontWeight:600 }}>Administrator</p>
+            </div>
+          </div>
+          <button onClick={onLogout} className="nav-item" style={{ color:"var(--danger)", fontSize:12 }}>
+            <span>→</span> Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* ── ADMIN MAIN ── */}
+      <main style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
+        {/* Topbar */}
+        <div style={{ position:"sticky", top:0, zIndex:10, background:"rgba(7,9,15,.9)", backdropFilter:"blur(16px)", borderBottom:"1px solid var(--border)", padding:"14px 24px", display:"flex", alignItems:"center", gap:12 }}>
+          {tab==="parts" && <>
+            <div style={{ flex:1, position:"relative" }}>
+              <svg style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)" }} width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input className="inp" value={search} onChange={e=>{setSearch(e.target.value);setPg(1);}} placeholder="Search spare parts…" style={{ paddingLeft:38 }} />
+            </div>
+            <button className="btn-primary" onClick={()=>setForm("add")} style={{ padding:"10px 18px", fontSize:13, display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>
+              <span style={{ fontSize:18, lineHeight:1 }}>+</span> Add Part
+            </button>
+          </>}
+          {tab==="users" && <h2 style={{ fontSize:16, fontWeight:700, color:"var(--text)" }}>User Management</h2>}
+        </div>
+
+        <div style={{ padding:"24px", flex:1 }}>
+          {/* Stats row */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:24 }}>
+            {stats.map(s => (
+              <div key={s.label} className={`stat-card ${s.cls}`}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:38, height:38, borderRadius:10, background:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{s.icon}</div>
+                  <div>
+                    <p style={{ fontSize:22, fontWeight:800, color:"var(--text)", lineHeight:1 }} className="brand">{s.val}</p>
+                    <p style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{s.label}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Parts tab */}
+          {tab === "parts" && <>
+            {/* Module tabs */}
+            {modCat !== "All" && (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:16 }}>
+                <button className={`mod-tab ${subcat==="All"?`active-${CAT_COLOR[modCat]||"all"}`:""}`} onClick={()=>setSubcat("All")}>All {modCat}</button>
+                {subcats.map(s => (
+                  <button key={s} className={`mod-tab ${subcat===s?`active-${CAT_COLOR[modCat]||"all"}`:""}`} onClick={()=>{setSubcat(s);setPg(1);}}>{s}</button>
+                ))}
+              </div>
+            )}
+
+            {/* Section header */}
+            <div className="section-header" style={{ marginBottom:16 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background: modCat==="CTP"?"var(--ctp)":modCat==="Processors"?"var(--proc)":modCat==="Others"?"var(--other)":"var(--accent)" }} />
+                <span style={{ fontSize:16, fontWeight:700, color:"var(--text)" }} className="brand">
+                  {modCat === "All" ? "All Spare Parts" : modCat === "CTP" ? "CTP — Computer to Plate" : modCat === "Processors" ? "Processors & Chemistry" : "Others & Accessories"}
+                </span>
+              </div>
+              <span style={{ fontSize:12, color:"var(--muted)" }}>{filtered.length} parts</span>
+            </div>
+
+            {paged.length === 0 ? <EmptyState /> :
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:18 }}>
+                {paged.map((p,i) => (
+                  <div key={p._id} style={{ position:"relative" }} className="group-wrap">
+                    <PartCard part={p} onClick={()=>setSel(p)} delay={i*30} />
+                    <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6, opacity:0, transition:"opacity .2s" }} className="card-actions">
+                      <button onClick={e=>{e.stopPropagation();setForm(p);}} style={{ width:30, height:30, background:"var(--surface)", border:"1px solid var(--border)", borderRadius:8, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>✏️</button>
+                      <button onClick={e=>{e.stopPropagation();if(confirm("Delete this part?"))onDelete(p._id);}} style={{ width:30, height:30, background:"var(--surface)", border:"1px solid rgba(248,113,113,.3)", borderRadius:8, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            }
+            <Pagination pg={pg} total={totalPg} onChange={setPg} />
+          </>}
+
+          {tab === "users" && <UsersPanel users={users} onApprove={onApprove} onReject={onReject} onDelete={onDeleteUser} />}
+        </div>
+      </main>
+
+      {sel && !form && <PartModal part={sel} onClose={()=>setSel(null)} isAdmin onEdit={p=>{setForm(p);setSel(null);}} onDelete={id=>{onDelete(id);setSel(null);}} />}
+      {form && <PartForm part={form==="add"?null:form} onSave={async d=>{form==="add"?await onAdd(d):await onUpdate(form._id,d);setForm(null);}} onClose={()=>setForm(null)} />}
+
+      <style>{`.group-wrap:hover .card-actions { opacity:1 !important; }`}</style>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART CARD
+// ════════════════════════════════════════════════════════════════════════════
+function PartCard({ part, onClick, delay=0 }) {
+  const accent = part.category==="CTP" ? "var(--ctp)" : part.category==="Processors" ? "var(--proc)" : "var(--other)";
+  const catCls  = `cat-${part.category==="CTP"?"ctp":part.category==="Processors"?"proc":"other"}`;
+  const imageUrl = part.image 
+    ? (part.image.startsWith("http") ? part.image : `${API_BASE.replace("/api","")}${part.image}`)
+    : "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop";
+  return (
+    <div onClick={onClick} className={`card-hover anim-fade-up ${catCls}`} style={{
+      background:"var(--card)", borderRadius:16, overflow:"hidden", cursor:"pointer",
+      border:"1px solid var(--border)", animationDelay:`${delay}ms`,
+    }}>
+      <div style={{ position:"relative", height:160, overflow:"hidden", background:"var(--surface)" }}>
+        <img src={imageUrl} alt={part.name}
+          style={{ width:"100%", height:"100%", objectFit:"cover", transition:"transform .4s" }}
+          onError={e=>{ e.target.src="https://via.placeholder.com/400x200/0d1117/6b7a99?text=No+Image"; }} />
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(7,9,15,.7),transparent)" }} />
+        <div style={{ position:"absolute", top:10, left:10, display:"flex", gap:6 }}>
+          <span className={`badge badge-${part.category==="CTP"?"ctp":part.category==="Processors"?"proc":"other"}`}>{part.category}</span>
+          {part.subcategory && <span className="badge" style={{ background:"rgba(255,255,255,.08)", color:"var(--muted)", border:"1px solid var(--border)" }}>{part.subcategory}</span>}
+        </div>
+      </div>
+      <div style={{ padding:"14px 16px" }}>
+        <p className="mono" style={{ fontSize:10, color:accent, fontWeight:600, letterSpacing:".08em", marginBottom:4 }}>{part.model}</p>
+        <h3 style={{ fontSize:14, fontWeight:700, color:"var(--text)", lineHeight:1.3, marginBottom:6 }}>{part.name}</h3>
+        <p style={{ fontSize:12, color:"var(--muted)", lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{part.description}</p>
+        {(part.tags||[]).length > 0 && (
+          <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:4 }}>
+            {(part.tags||[]).slice(0,3).map(t => <span key={t} className="tag">#{t}</span>)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART DETAIL MODAL
+// ════════════════════════════════════════════════════════════════════════════
+function PartModal({ part, onClose, isAdmin, onEdit, onDelete }) {
+  const accent = part.category==="CTP" ? "var(--ctp)" : part.category==="Processors" ? "var(--proc)" : "var(--other)";
+  const imageUrl = part.image 
+    ? (part.image.startsWith("http") ? part.image : `${API_BASE.replace("/api","")}${part.image}`)
+    : "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=300&fit=crop";
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.75)", backdropFilter:"blur(8px)", zIndex:50, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div className="anim-pop-in" onClick={e=>e.stopPropagation()} style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:24, width:"100%", maxWidth:500, overflow:"hidden", boxShadow:"0 40px 100px rgba(0,0,0,.6)" }}>
+        <div style={{ position:"relative", height:220, background:"var(--surface)" }}>
+          <img src={imageUrl} alt={part.name}
+            style={{ width:"100%", height:"100%", objectFit:"cover" }}
+            onError={e=>{e.target.src="https://via.placeholder.com/600x300/0d1117/6b7a99?text=No+Image";}} />
+          <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(7,9,15,.85),transparent 50%)" }} />
+          <button onClick={onClose} style={{ position:"absolute", top:14, right:14, width:32, height:32, background:"rgba(0,0,0,.5)", border:"1px solid rgba(255,255,255,.1)", borderRadius:"50%", cursor:"pointer", color:"#fff", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(8px)" }}>✕</button>
+          <div style={{ position:"absolute", bottom:14, left:16, display:"flex", gap:6 }}>
+            <span className={`badge badge-${part.category==="CTP"?"ctp":part.category==="Processors"?"proc":"other"}`}>{part.category}</span>
+            {part.subcategory && <span className="badge" style={{ background:"rgba(255,255,255,.1)", color:"#fff", border:"1px solid rgba(255,255,255,.2)" }}>{part.subcategory}</span>}
+          </div>
+        </div>
+        <div style={{ padding:24 }}>
+          <p className="mono" style={{ fontSize:11, color:accent, fontWeight:600, letterSpacing:".08em", marginBottom:6 }}>{part.model}</p>
+          <h2 style={{ fontSize:20, fontWeight:800, color:"var(--text)", marginBottom:10, lineHeight:1.25 }} className="brand">{part.name}</h2>
+          <p style={{ fontSize:13, color:"var(--muted)", lineHeight:1.7 }}>{part.description}</p>
+          {(part.tags||[]).length > 0 && (
+            <div style={{ marginTop:14, display:"flex", flexWrap:"wrap", gap:6 }}>
+              {(part.tags||[]).map(t => <span key={t} className="tag">#{t}</span>)}
+            </div>
+          )}
+          {isAdmin && (
+            <div style={{ display:"flex", gap:10, marginTop:20 }}>
+              <button className="btn-primary" onClick={()=>onEdit(part)} style={{ flex:1, padding:"11px 0", fontSize:13 }}>✏️ Edit Part</button>
+              <button onClick={()=>{if(confirm("Delete this part?"))onDelete(part._id);}} style={{ flex:1, background:"rgba(248,113,113,.1)", border:"1px solid rgba(248,113,113,.25)", color:"var(--danger)", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:600, cursor:"pointer", transition:"background .2s" }}>🗑️ Delete</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART FORM — ADD / EDIT with IMAGE UPLOAD
+// ════════════════════════════════════════════════════════════════════════════
+function PartForm({ part, onSave, onClose }) {
+  const [f, setF] = useState({
+    name: part?.name||"", model: part?.model||"", category: part?.category||"CTP",
+    subcategory: part?.subcategory||"", description: part?.description||"",
+    imageUrl: (part?.imageType==="url" ? part?.image : "")||"",
+    tags: (part?.tags||[]).join(", "),
+  });
+  const [imageFile,    setImageFile]    = useState(null);   // local file
+  const [imagePreview, setImagePreview] = useState(part?.imageType==="local" ? (part?.image||"") : (part?.image||""));
+  const [imageMode,    setImageMode]    = useState(part?.imageType==="local"?"local":"url"); // "local" | "url"
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef();
+
+  const set = (k,v) => setF(p => ({...p,[k]:v}));
+
+  const subcats = f.category === "CTP" ? CTP_SUBCATS : f.category === "Processors" ? PROC_SUBCATS : OTHER_SUBCATS;
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImageMode("local");
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleUrlChange = (url) => {
+    set("imageUrl", url);
+    setImageMode("url");
+    setImageFile(null);
+    setImagePreview(url);
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const err = {};
+    if (!f.name.trim())        err.name        = "Required";
+    if (!f.model.trim())       err.model       = "Required";
+    if (!f.description.trim()) err.description = "Required";
+    if (Object.keys(err).length) return setErrors(err);
+
+    setSaving(true);
+    const fd = new FormData();
+    fd.append("name",        f.name);
+    fd.append("model",       f.model);
+    fd.append("category",    f.category);
+    fd.append("subcategory", f.subcategory);
+    fd.append("description", f.description);
+    fd.append("tags",        JSON.stringify(f.tags.split(",").map(t=>t.trim()).filter(Boolean)));
+    if (imageMode === "local" && imageFile) {
+      fd.append("image", imageFile);
+    } else if (imageMode === "url" && f.imageUrl) {
+      fd.append("imageUrl", f.imageUrl);
+    }
+    await onSave(fd);
+    setSaving(false);
+  };
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.75)", backdropFilter:"blur(8px)", zIndex:50, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div className="anim-pop-in" onClick={e=>e.stopPropagation()} style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:24, width:"100%", maxWidth:560, maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 40px 100px rgba(0,0,0,.6)" }}>
+        {/* Header */}
+        <div style={{ padding:"20px 24px 16px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+          <h2 style={{ fontSize:16, fontWeight:700, color:"var(--text)" }} className="brand">{part?"Edit Spare Part":"Add New Spare Part"}</h2>
+          <button onClick={onClose} style={{ width:30, height:30, background:"var(--surface)", border:"1px solid var(--border)", borderRadius:8, cursor:"pointer", color:"var(--muted)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ overflowY:"auto", flex:1, padding:24 }}>
+          <form onSubmit={submit} style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
+            {/* Part Name */}
+            <div>
+              <label style={{ fontSize:11, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", display:"block", marginBottom:6 }}>Part Name *</label>
+              <input className="inp" value={f.name} onChange={e=>set("name",e.target.value)} placeholder="e.g. Thermal Laser Unit" style={errors.name?{borderColor:"var(--danger)"}:{}} />
+              {errors.name && <p style={{ color:"var(--danger)", fontSize:11, marginTop:4 }}>{errors.name}</p>}
+            </div>
+
+            {/* Model + Category row */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              <div>
+                <label style={{ fontSize:11, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", display:"block", marginBottom:6 }}>Model No. *</label>
+                <input className="inp mono" value={f.model} onChange={e=>set("model",e.target.value)} placeholder="LU-T800" style={errors.model?{borderColor:"var(--danger)"}:{}} />
+                {errors.model && <p style={{ color:"var(--danger)", fontSize:11, marginTop:4 }}>{errors.model}</p>}
+              </div>
+              <div>
+                <label style={{ fontSize:11, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", display:"block", marginBottom:6 }}>Category *</label>
+                <select className="inp" value={f.category} onChange={e=>{set("category",e.target.value);set("subcategory","");}}>
+                  {["CTP","Processors","Others"].map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Subcategory */}
+            <div>
+              <label style={{ fontSize:11, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", display:"block", marginBottom:6 }}>Sub-category</label>
+              <select className="inp" value={f.subcategory} onChange={e=>set("subcategory",e.target.value)}>
+                <option value="">Select sub-category…</option>
+                {subcats.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label style={{ fontSize:11, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", display:"block", marginBottom:6 }}>Description *</label>
+              <textarea className="inp" value={f.description} onChange={e=>set("description",e.target.value)} rows={3} placeholder="Technical description of the spare part…" style={{ resize:"vertical", ...(errors.description?{borderColor:"var(--danger)"}:{}) }} />
+              {errors.description && <p style={{ color:"var(--danger)", fontSize:11, marginTop:4 }}>{errors.description}</p>}
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label style={{ fontSize:11, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", display:"block", marginBottom:6 }}>Tags <span style={{fontWeight:400, textTransform:"none"}}>(comma-separated)</span></label>
+              <input className="inp" value={f.tags} onChange={e=>set("tags",e.target.value)} placeholder="laser, thermal, 830nm, diode" />
+            </div>
+
+            {/* ── IMAGE SECTION ── */}
+            <div>
+              <label style={{ fontSize:11, color:"var(--muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", display:"block", marginBottom:10 }}>Part Image</label>
+
+              {/* Mode toggle */}
+              <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                <button type="button" onClick={()=>setImageMode("local")} style={{
+                  flex:1, padding:"8px 0", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer",
+                  background: imageMode==="local" ? "rgba(59,130,246,.15)" : "var(--surface)",
+                  border: imageMode==="local" ? "1px solid rgba(59,130,246,.4)" : "1px solid var(--border)",
+                  color: imageMode==="local" ? "var(--accent)" : "var(--muted)",
+                }}>📁 Upload Local Image</button>
+                <button type="button" onClick={()=>setImageMode("url")} style={{
+                  flex:1, padding:"8px 0", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer",
+                  background: imageMode==="url" ? "rgba(59,130,246,.15)" : "var(--surface)",
+                  border: imageMode==="url" ? "1px solid rgba(59,130,246,.4)" : "1px solid var(--border)",
+                  color: imageMode==="url" ? "var(--accent)" : "var(--muted)",
+                }}>🔗 Image URL</button>
+              </div>
+
+              {imageMode === "local" && (
+                <div className="img-upload-zone">
+                  <div className="drop-zone" onClick={()=>fileRef.current?.click()}>
+                    {imageFile
+                      ? <p style={{ color:"var(--success)", fontSize:13, fontWeight:600 }}>✓ {imageFile.name}</p>
+                      : <>
+                          <p style={{ fontSize:28, marginBottom:6 }}>📷</p>
+                          <p style={{ color:"var(--muted)", fontSize:13 }}>Click to upload image</p>
+                          <p style={{ color:"var(--muted)", fontSize:11, marginTop:2 }}>JPG, PNG, WebP — max 10MB</p>
+                        </>
+                    }
+                  </div>
+                  <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display:"none" }} />
+                </div>
+              )}
+
+              {imageMode === "url" && (
+                <input className="inp" value={f.imageUrl} onChange={e=>handleUrlChange(e.target.value)} placeholder="https://images.unsplash.com/… or https://example.com/image.jpg" />
+              )}
+
+              {/* Preview */}
+              {imagePreview && (
+                <div style={{ marginTop:10, borderRadius:10, overflow:"hidden", height:120, border:"1px solid var(--border)", position:"relative" }}>
+                  <img src={imagePreview} alt="preview" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e=>e.target.style.display="none"} />
+                  <button type="button" onClick={()=>{setImagePreview("");setImageFile(null);set("imageUrl","");}} style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,.6)", border:"none", borderRadius:6, color:"#fff", cursor:"pointer", padding:"2px 8px", fontSize:12 }}>✕ Remove</button>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display:"flex", gap:10, paddingTop:4 }}>
+              <button type="button" className="btn-ghost" onClick={onClose} style={{ flex:1, padding:"11px 0", fontSize:13 }}>Cancel</button>
+              <button type="submit" className="btn-primary" disabled={saving} style={{ flex:2, padding:"11px 0", fontSize:13 }}>
+                {saving ? "Saving…" : part ? "Save Changes" : "Add Spare Part"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USERS PANEL
+// ════════════════════════════════════════════════════════════════════════════
+function UsersPanel({ users, onApprove, onReject, onDelete }) {
+  const emps     = users.filter(u => u.role === "employee");
+  const pending  = emps.filter(u => u.status === "pending");
+  const approved = emps.filter(u => u.status === "approved");
+  const rejected = emps.filter(u => u.status === "rejected");
+
+  const UserRow = ({ user }) => (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:"1px solid var(--border)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, minWidth:0 }}>
+        <div style={{ width:38, height:38, borderRadius:"50%", background:"linear-gradient(135deg,#60a5fa,#818cf8)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:700, fontSize:14, flexShrink:0 }}>{user.name[0]}</div>
+        <div style={{ minWidth:0 }}>
+          <p style={{ fontSize:13, fontWeight:600, color:"var(--text)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{user.name}</p>
+          <p style={{ fontSize:11, color:"var(--muted)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{user.email}</p>
+          {user.department && <p style={{ fontSize:10, color:"var(--border2)", marginTop:1 }}>{user.department}</p>}
+        </div>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, marginLeft:12 }}>
+        <span className={`badge badge-${user.status}`}>{user.status}</span>
+        {user.status === "pending" && <>
+          <button onClick={()=>onApprove(user._id)} style={{ background:"rgba(74,222,128,.15)", border:"1px solid rgba(74,222,128,.3)", color:"var(--success)", borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>✓ Approve</button>
+          <button onClick={()=>onReject(user._id)}  style={{ background:"rgba(248,113,113,.1)",  border:"1px solid rgba(248,113,113,.25)", color:"var(--danger)",  borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>✕ Reject</button>
+        </>}
+        <button onClick={()=>{if(confirm("Remove user?"))onDelete(user._id);}} style={{ background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:16, padding:"4px" }}>🗑️</button>
+      </div>
+    </div>
+  );
+
+  const Section = ({ title, items, accent }) => (
+    <div style={{ background:"var(--card)", border:`1px solid ${accent||"var(--border)"}`, borderRadius:16, overflow:"hidden", marginBottom:16 }}>
+      <div style={{ padding:"14px 16px", borderBottom:`1px solid ${accent||"var(--border)"}`, display:"flex", alignItems:"center", justifyContent:"space-between", background:accent?"rgba(251,191,36,.04)":"transparent" }}>
+        <h3 style={{ fontSize:14, fontWeight:700, color:accent?"var(--warn)":"var(--text)" }}>{title}</h3>
+        <span className="badge" style={{ background:accent?"rgba(251,191,36,.2)":"rgba(255,255,255,.05)", color:accent?"var(--warn)":"var(--muted)" }}>{items.length}</span>
+      </div>
+      {items.length === 0
+        ? <p style={{ textAlign:"center", padding:"20px 0", color:"var(--muted)", fontSize:13 }}>None</p>
+        : items.map(u => <UserRow key={u._id} user={u} />)
+      }
+    </div>
+  );
+
+  return (
+    <div>
+      {pending.length > 0 && <Section title="⏳ Pending Approvals" items={pending} accent="rgba(251,191,36,.3)" />}
+      <Section title="✅ Approved Employees" items={approved} />
+      {rejected.length > 0 && <Section title="✕ Rejected Requests" items={rejected} />}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHARED
+// ════════════════════════════════════════════════════════════════════════════
+function EmptyState() {
+  return (
+    <div style={{ textAlign:"center", padding:"80px 20px", color:"var(--muted)" }}>
+      <div style={{ fontSize:48, marginBottom:12, opacity:.4 }}>⬡</div>
+      <p style={{ fontSize:16, fontWeight:600, color:"var(--text)", marginBottom:4 }}>No parts found</p>
+      <p style={{ fontSize:13 }}>Try different keywords or clear the filter</p>
+    </div>
+  );
+}
+
+function Pagination({ pg, total, onChange }) {
+  if (total <= 1) return null;
+  return (
+    <div style={{ marginTop:32, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+      <button onClick={()=>onChange(p=>Math.max(1,p-1))} disabled={pg===1} className="btn-ghost" style={{ padding:"8px 16px", fontSize:13, opacity:pg===1?.4:1 }}>← Prev</button>
+      {Array.from({length:total},(_,i)=>i+1).map(n=>(
+        <button key={n} onClick={()=>onChange(n)} style={{
+          width:36, height:36, borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", border:"1px solid",
+          background: pg===n ? "linear-gradient(135deg,#3b82f6,#6366f1)" : "transparent",
+          borderColor: pg===n ? "transparent" : "var(--border)",
+          color: pg===n ? "#fff" : "var(--muted)",
+          transition:"all .2s",
+        }}>{n}</button>
+      ))}
+      <button onClick={()=>onChange(p=>Math.min(total,p+1))} disabled={pg===total} className="btn-ghost" style={{ padding:"8px 16px", fontSize:13, opacity:pg===total?.4:1 }}>Next →</button>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MOUNT
+// ════════════════════════════════════════════════════════════════════════════
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
