@@ -253,7 +253,24 @@ const { useState, useEffect, useRef, useCallback } = React;
 // ════════════════════════════════════════════════════════════════════════════
 // CONFIG & CONSTANTS
 // ════════════════════════════════════════════════════════════════════════════
-const API_BASE = "http://localhost:5000/api";
+
+// Dynamic API Base URL - works in both localhost and production
+const API_BASE = (() => {
+  const host = window.location.host;
+  
+  // Development environment
+  if (host.includes("localhost") || host.includes("127.0.0.1")) {
+    return "http://localhost:5000/api";
+  }
+  
+  // Production on Vercel
+  if (host.includes("vercel.app")) {
+    return `https://${host}/api`;
+  }
+  
+  // Fallback to current domain
+  return `${window.location.protocol}//${host}/api`;
+})();
 
 const CATEGORIES = ["All", "CTP", "Processors", "Others"];
 

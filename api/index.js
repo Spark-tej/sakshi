@@ -14,12 +14,16 @@ const path = require("path");
 const fs = require("fs");
 require("dotenv").config();
 
+// ── Import Centralized Configuration ──────────────────────────────────────────
+const { JWT_SECRET, MONGO_URI, corsOptions, uploadsDir } = require("../config");
+
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || "printparts_secret_2024";
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb+srv://saiteja:saiteja@cluster0.xwqsnmf.mongodb.net/printparts";
+
+// ── Ensure uploads folder exists (for Vercel /tmp) ───────────────────────────
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // ── Security Headers (CSP) ────────────────────────────────────────────────────
@@ -31,10 +35,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Multer Storage (in /tmp for serverless) ────────────────────────────────────
-const uploadsDir = "/tmp/uploads";
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
+// ── Multer Storage (auto-detects /tmp for Vercel) ────────────────────────────
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
