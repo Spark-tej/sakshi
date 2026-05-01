@@ -1,7 +1,7 @@
 {
   "version": 2,
+  "public": ".",
   "buildCommand": "echo 'build complete'",
-  "outputDirectory": ".",
   "functions": {
     "api/**/*.js": {
       "maxDuration": 30,
@@ -10,12 +10,18 @@
   },
   "routes": [
     {
-      "src": "/api/?(.*)",
-      "dest": "/api/index.js"
+      "src": "/api/(.*)",
+      "dest": "/api/index.js",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     },
     {
-      "src": "/uploads/?(.*)",
-      "dest": "public/uploads/$1"
+      "src": "/uploads/(.*)",
+      "dest": "/uploads/$1"
+    },
+    {
+      "src": "/(.*\\.[^/]+)?$",
+      "dest": "/$1",
+      "status": 200
     },
     {
       "src": "/(.*)",
